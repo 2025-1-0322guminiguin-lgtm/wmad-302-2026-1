@@ -1,6 +1,6 @@
 /**
  * Search Screen - Cookbook
- * Features: Debounced query search, category/cuisine/difficulty filters, sort options + animations
+ * Features: Debounced query search, category/cuisine/difficulty filters, sort options, responsive grid
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -11,9 +11,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Card, Title, Chip, TextInput as PaperTextInput } from 'react-native-paper';
+import { Title, TextInput as PaperTextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { recipeApi } from '@/services/recipeApi';
 import { Recipe } from '@/types/recipe';
@@ -49,6 +50,9 @@ export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string }>();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { width } = useWindowDimensions();
+
+  const numColumns = width >= 900 ? 2 : 1;
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 350);
@@ -62,7 +66,6 @@ export default function SearchScreen() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
   const [sortBy, setSortBy] = useState<SortOption>('default');
 
-  // Sync category param when navigating from Categories screen
   useEffect(() => {
     if (params.category) {
       setSelectedCategory(params.category);
@@ -105,7 +108,6 @@ export default function SearchScreen() {
     fetchRecipes();
   }, [fetchRecipes]);
 
-  // Client-side combined filtering (category + cuisine + difficulty) and sorting
   const filteredAndSortedResults = useMemo(() => {
     let filtered = [...allRecipes];
 
@@ -163,50 +165,96 @@ export default function SearchScreen() {
     const favorited = isFavorite(item.id);
 
     return (
-      <AnimatedCardWrapper index={index}>
+      <AnimatedCardWrapper
+        index={index}
+        style={{
+          flex: 1,
+          marginBottom: 12,
+          marginRight: numColumns === 2 && index % 2 === 0 ? 12 : 0,
+        }}
+      >
         <ScalePressable
-          style={styles.resultCard}
+          hoverScale={1.015}
           onPress={() => router.push(`/(app)/(tabs)/recipe/${item.id}`)}
         >
-          <Card style={styles.card} elevation={1}>
-            <View style={styles.resultContent}>
-              <Image source={{ uri: item.image }} style={styles.resultImage} resizeMode="cover" />
-              <View style={styles.resultInfo}>
-                <Title style={styles.resultTitle} numberOfLines={1}>
-                  {item.name}
-                </Title>
-                <View style={styles.resultMeta}>
-                  <Chip style={styles.difficultyChip} textStyle={{ fontSize: 11 }}>
-                    {item.difficulty}
-                  </Chip>
-                  <Chip style={styles.cuisineChip} textStyle={{ fontSize: 11 }}>
-                    {item.cuisine}
-                  </Chip>
-                </View>
-                <Text style={styles.resultDetails}>
-                  ⏱️ {item.prepTimeMinutes + item.cookTimeMinutes}m · 🔥 {item.caloriesPerServing}{' '}
-                  cal · ⭐ {item.rating}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 10,
+              borderWidth: 1,
+              borderColor: '#EFE6DD',
+              shadowColor: '#3E2723',
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 2,
+            }}
+          >
+            <Image
+              source={{ uri: item.image }}
+              style={{ width: 88, height: 88, borderRadius: 12, backgroundColor: '#F5EFEA' }}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1, marginLeft: 12, marginRight: 6 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '700',
+                  color: '#E85D04',
+                  textTransform: 'uppercase',
+                  marginBottom: 2,
+                }}
+              >
+                {item.cuisine} · {item.difficulty}
+              </Text>
+              <Text
+                style={{ fontSize: 15, fontWeight: '700', color: '#2B1B12', marginBottom: 6 }}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ fontSize: 12, color: '#6D4C41' }}>
+                  ⏱ {item.prepTimeMinutes + item.cookTimeMinutes}m
+                </Text>
+                <Text style={{ fontSize: 12, color: '#6D4C41' }}>
+                  🔥 {item.caloriesPerServing} cal
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#2B1B12' }}>
+                  ⭐ {item.rating.toFixed(1)}
                 </Text>
               </View>
-              <AnimatedHeartButton
-                isFavorite={favorited}
-                onPress={() => toggleFavorite(item)}
-                size={22}
-              />
             </View>
-          </Card>
+            <AnimatedHeartButton
+              isFavorite={favorited}
+              onPress={() => toggleFavorite(item)}
+              size={22}
+            />
+          </View>
         </ScalePressable>
       </AnimatedCardWrapper>
     );
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: '#FAF6F2' }]}
+      contentContainerStyle={{
+        padding: 16,
+        maxWidth: 1200,
+        width: '100%',
+        alignSelf: 'center',
+        paddingBottom: 32,
+      }}
+    >
       {/* Search Bar */}
       <View style={styles.searchBarContainer}>
         <PaperTextInput
           mode="outlined"
-          placeholder="Search recipes, ingredients..."
+          placeholder="Search recipes, ingredients, cuisines..."
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={fetchRecipes}
@@ -214,7 +262,8 @@ export default function SearchScreen() {
           style={{ backgroundColor: '#FFFFFF', flex: 1 }}
           outlineColor="#E0D6CC"
           activeOutlineColor="#E85D04"
-          left={<PaperTextInput.Icon icon="magnify" color="#8D6E63" />}
+          outlineStyle={{ borderRadius: 14 }}
+          left={<PaperTextInput.Icon icon="magnify" color="#E85D04" />}
           right={
             query ? (
               <PaperTextInput.Icon icon="close" color="#8D6E63" onPress={() => setQuery('')} />
@@ -223,14 +272,25 @@ export default function SearchScreen() {
         />
       </View>
 
-      {/* Category / Meal Type Filters */}
-      <View style={styles.filterSection}>
-        <Title style={styles.filterTitle}>Category / Meal Type</Title>
+      {/* Filter Card Container */}
+      <View
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: 18,
+          padding: 14,
+          marginBottom: 18,
+          borderWidth: 1,
+          borderColor: '#EFE6DD',
+        }}
+      >
+        <Title style={[styles.filterTitle, { fontSize: 13, fontWeight: '700' }]}>
+          Category / Meal Type
+        </Title>
         <FlatList
           data={CATEGORIES}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}
+          contentContainerStyle={[styles.filterList, { marginBottom: 10 }]}
           keyExtractor={(item) => `cat-${item}`}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -251,16 +311,13 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         />
-      </View>
 
-      {/* Cuisine Filters */}
-      <View style={styles.filterSection}>
-        <Title style={styles.filterTitle}>Cuisine</Title>
+        <Title style={[styles.filterTitle, { fontSize: 13, fontWeight: '700' }]}>Cuisine</Title>
         <FlatList
           data={CUISINES}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}
+          contentContainerStyle={[styles.filterList, { marginBottom: 10 }]}
           keyExtractor={(item) => `cuisine-${item}`}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -281,58 +338,63 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         />
-      </View>
 
-      {/* Difficulty & Sort Row */}
-      <View style={styles.filterSection}>
-        <Title style={styles.filterTitle}>Difficulty</Title>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-          {DIFFICULTIES.map((diff) => (
-            <TouchableOpacity
-              key={diff}
-              style={[
-                styles.filterChip,
-                selectedDifficulty === diff && styles.filterChipSelected,
-              ]}
-              onPress={() => setSelectedDifficulty(diff)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedDifficulty === diff && styles.filterChipTextSelected,
-                ]}
-              >
-                {diff}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+          <View>
+            <Title style={[styles.filterTitle, { fontSize: 13, fontWeight: '700' }]}>
+              Difficulty
+            </Title>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {DIFFICULTIES.map((diff) => (
+                <TouchableOpacity
+                  key={diff}
+                  style={[
+                    styles.filterChip,
+                    selectedDifficulty === diff && styles.filterChipSelected,
+                  ]}
+                  onPress={() => setSelectedDifficulty(diff)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedDifficulty === diff && styles.filterChipTextSelected,
+                    ]}
+                  >
+                    {diff}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-        <Title style={styles.filterTitle}>Sort By</Title>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {(
-            [
-              { key: 'default', label: 'Default' },
-              { key: 'rating', label: '⭐ Top Rated' },
-              { key: 'time', label: '⏱️ Fastest' },
-              { key: 'calories', label: '🔥 Lowest Cal' },
-            ] as const
-          ).map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.filterChip, sortBy === opt.key && styles.filterChipSelected]}
-              onPress={() => setSortBy(opt.key)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  sortBy === opt.key && styles.filterChipTextSelected,
-                ]}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View>
+            <Title style={[styles.filterTitle, { fontSize: 13, fontWeight: '700' }]}>Sort By</Title>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {(
+                [
+                  { key: 'default', label: 'Default' },
+                  { key: 'rating', label: '⭐ Top Rated' },
+                  { key: 'time', label: '⏱️ Fastest' },
+                  { key: 'calories', label: '🔥 Lowest Cal' },
+                ] as const
+              ).map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.filterChip, sortBy === opt.key && styles.filterChipSelected]}
+                  onPress={() => setSortBy(opt.key)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      sortBy === opt.key && styles.filterChipTextSelected,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
 
@@ -343,10 +405,10 @@ export default function SearchScreen() {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 8,
+            marginBottom: 12,
           }}
         >
-          <Title style={styles.resultsTitle}>
+          <Title style={[styles.resultsTitle, { fontWeight: '800', color: '#2B1B12' }]}>
             Results {query ? `for "${query}"` : ''} ({filteredAndSortedResults.length})
           </Title>
           {(query ||
@@ -355,7 +417,9 @@ export default function SearchScreen() {
             selectedDifficulty !== 'All' ||
             sortBy !== 'default') && (
             <TouchableOpacity onPress={resetFilters}>
-              <Text style={{ color: '#E85D04', fontWeight: '600', fontSize: 13 }}>Reset</Text>
+              <Text style={{ color: '#E85D04', fontWeight: '700', fontSize: 13 }}>
+                Reset Filters
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -377,12 +441,12 @@ export default function SearchScreen() {
           </View>
         ) : (
           <FlatList
+            key={`search-cols-${numColumns}`}
             data={filteredAndSortedResults}
             renderItem={renderResult}
             keyExtractor={(item) => item.id.toString()}
+            numColumns={numColumns}
             scrollEnabled={false}
-            contentContainerStyle={styles.resultsList}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
           />
         )}
       </View>
