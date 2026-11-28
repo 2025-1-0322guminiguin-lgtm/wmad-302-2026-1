@@ -71,8 +71,17 @@ export default function CartScreen() {
 
   const handleRemoveItem = (productId: number, title: string) => {
     if (Platform.OS === 'web') {
-      if (window.confirm(`Remove "${title}" from cart?`)) {
+      if (Platform.OS === "web") {
+        if (window.confirm(`Remove "${title}" from cart?`)) {
         removeFromCart(productId);
+      }
+      } else {
+        Alert.alert("Remove Item", `Remove "${title}" from cart?`, [
+          { text: "Cancel", style: "cancel" },
+          { text: "Remove", style: "destructive", onPress: () => {
+        removeFromCart(productId);
+      } }
+        ]);
       }
       return;
     }

@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.wmad302.marketplace"
@@ -37,9 +39,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "marketplace-capstone"
+        "projectId": "68ac0769-a655-4a20-9ac4-31c752682df4"
       }
     },
-    "owner": "wmad302"
+    "owner": "123457274"
   }
 }

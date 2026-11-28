@@ -39,7 +39,7 @@ export default function RegisterScreen() {
 
   const showNotice = (title: string, message: string, onOk?: () => void) => {
     if (Platform.OS === 'web') {
-      window.alert(`${title}: ${message}`);
+      if (Platform.OS === "web") { window.alert(`${title}: ${message}`); } else { Alert.alert(title, message); }
       onOk?.();
     } else {
       Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
