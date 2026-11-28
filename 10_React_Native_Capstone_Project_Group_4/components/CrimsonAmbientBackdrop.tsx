@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Platform, View, StyleSheet, Animated, Easing, useWindowDimensions } from 'react-native';
 import { useDesignMode } from '@/context/DesignModeContext';
 
 const STYLE_ID = 'martfury-ambient-engine-style';
@@ -110,20 +110,169 @@ const AMBIENT_CSS = `
 `;
 
 const EMBERS = [
-  { left: '5%', size: 6, dur: '6.2s', delay: '0s', drift: '32px' },
-  { left: '12%', size: 8, dur: '7.8s', delay: '0.9s', drift: '-26px' },
-  { left: '19%', size: 5, dur: '5.6s', delay: '1.7s', drift: '24px' },
-  { left: '27%', size: 7, dur: '7.1s', delay: '0.4s', drift: '-34px' },
-  { left: '35%', size: 6, dur: '6.6s', delay: '2.2s', drift: '28px' },
-  { left: '43%', size: 9, dur: '8.3s', delay: '0.2s', drift: '-30px' },
-  { left: '51%', size: 5, dur: '5.9s', delay: '1.3s', drift: '36px' },
-  { left: '59%', size: 8, dur: '7.5s', delay: '2.6s', drift: '-24px' },
-  { left: '67%', size: 6, dur: '6.4s', delay: '0.8s', drift: '30px' },
-  { left: '75%', size: 7, dur: '7.9s', delay: '1.9s', drift: '-32px' },
-  { left: '83%', size: 5, dur: '5.8s', delay: '0.5s', drift: '22px' },
-  { left: '90%', size: 8, dur: '7.2s', delay: '1.5s', drift: '-26px' },
-  { left: '96%', size: 6, dur: '6.1s', delay: '0.3s', drift: '20px' },
+  { left: '5%', leftPct: 0.05, size: 6, dur: '6.2s', durMs: 6200, delay: '0s', delayMs: 0, drift: '32px', driftNum: 24 },
+  { left: '12%', leftPct: 0.12, size: 8, dur: '7.8s', durMs: 7800, delay: '0.9s', delayMs: 900, drift: '-26px', driftNum: -20 },
+  { left: '19%', leftPct: 0.19, size: 5, dur: '5.6s', durMs: 5600, delay: '1.7s', delayMs: 1700, drift: '24px', driftNum: 18 },
+  { left: '27%', leftPct: 0.27, size: 7, dur: '7.1s', durMs: 7100, delay: '0.4s', delayMs: 400, drift: '-34px', driftNum: -26 },
+  { left: '35%', leftPct: 0.35, size: 6, dur: '6.6s', durMs: 6600, delay: '2.2s', delayMs: 2200, drift: '28px', driftNum: 22 },
+  { left: '43%', leftPct: 0.43, size: 9, dur: '8.3s', durMs: 8300, delay: '0.2s', delayMs: 200, drift: '-30px', driftNum: -24 },
+  { left: '51%', leftPct: 0.51, size: 5, dur: '5.9s', durMs: 5900, delay: '1.3s', delayMs: 1300, drift: '36px', driftNum: 28 },
+  { left: '59%', leftPct: 0.59, size: 8, dur: '7.5s', durMs: 7500, delay: '2.6s', delayMs: 2600, drift: '-24px', driftNum: -18 },
+  { left: '67%', leftPct: 0.67, size: 6, dur: '6.4s', durMs: 6400, delay: '0.8s', delayMs: 800, drift: '30px', driftNum: 22 },
+  { left: '75%', leftPct: 0.75, size: 7, dur: '7.9s', durMs: 7900, delay: '1.9s', delayMs: 1900, drift: '-32px', driftNum: -24 },
+  { left: '83%', leftPct: 0.83, size: 5, dur: '5.8s', durMs: 5800, delay: '0.5s', delayMs: 500, drift: '22px', driftNum: 16 },
+  { left: '90%', leftPct: 0.90, size: 8, dur: '7.2s', durMs: 7200, delay: '1.5s', delayMs: 1500, drift: '-26px', driftNum: -20 },
+  { left: '96%', leftPct: 0.96, size: 6, dur: '6.1s', durMs: 6100, delay: '0.3s', delayMs: 300, drift: '20px', driftNum: 14 },
 ];
+
+function NativeEmber({ ember, screenWidth, screenHeight }: { ember: (typeof EMBERS)[number]; screenWidth: number; screenHeight: number }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(ember.delayMs),
+        Animated.timing(progress, {
+          toValue: 1,
+          duration: ember.durMs,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progress, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [ember.delayMs, ember.durMs, progress]);
+
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -(screenHeight * 0.92)],
+  });
+
+  const translateX = progress.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, ember.driftNum * 0.6, ember.driftNum],
+  });
+
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.12, 0.8, 1],
+    outputRange: [0, 0.95, 0.85, 0],
+  });
+
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.7, 1.3],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        nativeStyles.ember,
+        {
+          left: ember.leftPct * screenWidth,
+          width: ember.size,
+          height: ember.size,
+          borderRadius: ember.size / 2,
+          opacity,
+          transform: [{ translateX }, { translateY }, { scale }],
+        },
+      ]}
+    />
+  );
+}
+
+function NativeAmbientOverlay({ isCrimson }: { isCrimson: boolean }) {
+  const { width, height } = useWindowDimensions();
+  const auraPulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(auraPulse, {
+          toValue: 1,
+          duration: 4200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(auraPulse, {
+          toValue: 0,
+          duration: 4200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [auraPulse]);
+
+  const smoke1TranslateX = auraPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-18, 22],
+  });
+  const smoke1TranslateY = auraPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-12, 18],
+  });
+  const smoke1Scale = auraPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.95, 1.15],
+  });
+
+  const smoke2TranslateX = auraPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [20, -20],
+  });
+  const smoke2TranslateY = auraPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [15, -15],
+  });
+
+  return (
+    <View pointerEvents="none" style={nativeStyles.overlay}>
+      <Animated.View
+        style={[
+          nativeStyles.smokeTop,
+          {
+            backgroundColor: isCrimson ? 'rgba(225, 29, 72, 0.16)' : 'rgba(251, 191, 36, 0.14)',
+            transform: [
+              { translateX: smoke1TranslateX },
+              { translateY: smoke1TranslateY },
+              { scale: smoke1Scale },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          nativeStyles.smokeBottom,
+          {
+            backgroundColor: isCrimson ? 'rgba(255, 30, 66, 0.14)' : 'rgba(56, 189, 248, 0.12)',
+            transform: [
+              { translateX: smoke2TranslateX },
+              { translateY: smoke2TranslateY },
+              { scale: smoke1Scale },
+            ],
+          },
+        ]}
+      />
+      {isCrimson &&
+        EMBERS.map((ember, index) => (
+          <NativeEmber
+            key={index}
+            ember={ember}
+            screenWidth={width}
+            screenHeight={height}
+          />
+        ))}
+    </View>
+  );
+}
 
 export function CrimsonAmbientBackdrop() {
   const { isCrimson } = useDesignMode();
@@ -173,5 +322,44 @@ export function CrimsonAmbientBackdrop() {
     container.className = isCrimson ? 'is-crimson' : 'is-glass';
   }, [isCrimson]);
 
+  if (Platform.OS !== 'web') {
+    return <NativeAmbientOverlay isCrimson={isCrimson} />;
+  }
+
   return null;
 }
+
+const nativeStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+    elevation: 999,
+    overflow: 'hidden',
+  },
+  smokeTop: {
+    position: 'absolute',
+    top: 40,
+    left: -50,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+  },
+  smokeBottom: {
+    position: 'absolute',
+    bottom: 70,
+    right: -50,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+  },
+  ember: {
+    position: 'absolute',
+    bottom: 64,
+    backgroundColor: '#FF4D79',
+    shadowColor: '#FF1E42',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.95,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+});

@@ -1,7 +1,7 @@
 /**
  * Home Screen Styles - Crimson Obsidian Dark Glassmorphism Theme
  */
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
 import {
   GLASS_PALETTE,
   DARK_AMBIENT_BG,
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
   // Obsidian Top Header
   headerOuter: {
     ...amberGlassSurface(0.92, 0),
-    paddingTop: 14,
+    paddingTop: Platform.OS === 'web' ? 14 : (StatusBar.currentHeight || 36) + 10,
     marginBottom: 16,
   },
   headerInner: {
