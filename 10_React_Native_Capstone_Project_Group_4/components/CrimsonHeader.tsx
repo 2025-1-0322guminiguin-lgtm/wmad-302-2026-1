@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -13,6 +14,7 @@ interface CrimsonHeaderProps {
 
 export function CrimsonHeader({ searchPlaceholder = 'Search for products...' }: CrimsonHeaderProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { items, wishlist } = useCart();
   const { isCrimson } = useDesignMode();
@@ -26,6 +28,9 @@ export function CrimsonHeader({ searchPlaceholder = 'Search for products...' }: 
       style={[
         styles.headerOuter,
         isCrimson ? styles.headerCrimson : styles.headerGlass,
+        {
+          paddingTop: Platform.OS === 'web' ? 11 : Math.max(insets.top, 24) + 8,
+        },
       ]}
     >
       <View style={styles.headerInner}>
@@ -73,66 +78,68 @@ export function CrimsonHeader({ searchPlaceholder = 'Search for products...' }: 
         <View style={styles.iconsRow}>
           <DesignModeToggle />
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push('/(app)/(tabs)/profile')}
-          >
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={23}
-              color={isCrimson ? '#F8FAFC' : '#1E293B'}
-            />
-            {isDesktop && (
-              <Text
-                style={[styles.userTag, { color: isCrimson ? '#F8FAFC' : '#1E293B' }]}
-                numberOfLines={1}
+          {isDesktop && (
+            <>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => router.push('/(app)/(tabs)/profile')}
               >
-                {user ? user.firstName : 'Account'}
-              </Text>
-            )}
-          </TouchableOpacity>
+                <MaterialCommunityIcons
+                  name="account-outline"
+                  size={23}
+                  color={isCrimson ? '#F8FAFC' : '#1E293B'}
+                />
+                <Text
+                  style={[styles.userTag, { color: isCrimson ? '#F8FAFC' : '#1E293B' }]}
+                  numberOfLines={1}
+                >
+                  {user ? user.firstName : 'Account'}
+                </Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push('/(app)/(tabs)/profile')}
-          >
-            <MaterialCommunityIcons
-              name="heart-outline"
-              size={23}
-              color={isCrimson ? '#F8FAFC' : '#1E293B'}
-            />
-            {wishlist.length > 0 && (
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: isCrimson ? '#E11D48' : '#1E293B' },
-                ]}
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => router.push('/(app)/(tabs)/profile')}
               >
-                <Text style={styles.badgeText}>{wishlist.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+                <MaterialCommunityIcons
+                  name="heart-outline"
+                  size={23}
+                  color={isCrimson ? '#F8FAFC' : '#1E293B'}
+                />
+                {wishlist.length > 0 && (
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isCrimson ? '#E11D48' : '#1E293B' },
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>{wishlist.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => router.push('/(app)/(tabs)/cart')}
-          >
-            <MaterialCommunityIcons
-              name="cart-outline"
-              size={23}
-              color={isCrimson ? '#F8FAFC' : '#1E293B'}
-            />
-            {itemCount > 0 && (
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: isCrimson ? '#E11D48' : '#1E293B' },
-                ]}
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => router.push('/(app)/(tabs)/cart')}
               >
-                <Text style={styles.badgeText}>{itemCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+                <MaterialCommunityIcons
+                  name="cart-outline"
+                  size={23}
+                  color={isCrimson ? '#F8FAFC' : '#1E293B'}
+                />
+                {itemCount > 0 && (
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isCrimson ? '#E11D48' : '#1E293B' },
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>{itemCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -141,8 +148,8 @@ export function CrimsonHeader({ searchPlaceholder = 'Search for products...' }: 
 
 const styles = StyleSheet.create({
   headerOuter: {
-    paddingVertical: 11,
-    paddingHorizontal: 16,
+    paddingBottom: 11,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     zIndex: 10,
     ...(Platform.OS === 'web'
@@ -150,43 +157,43 @@ const styles = StyleSheet.create({
       : {}),
   },
   headerGlass: {
-    backgroundColor: 'rgba(251, 191, 36, 0.9)',
+    backgroundColor: 'rgba(251, 191, 36, 0.94)',
     borderBottomColor: 'rgba(255, 255, 255, 0.75)',
   },
   headerCrimson: {
-    backgroundColor: 'rgba(11, 11, 16, 0.94)',
+    backgroundColor: 'rgba(11, 11, 16, 0.96)',
     borderBottomColor: 'rgba(225, 29, 72, 0.38)',
   },
   headerInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 14,
+    gap: 8,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   brandLogoMark: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    marginRight: 5,
   },
   brandLogoM: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
   },
   brandDark: {
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
   brandAccent: {
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
   iconsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   iconBtn: {
     position: 'relative',
